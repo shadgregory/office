@@ -29,12 +29,9 @@
                [:cell "Satish"]
                [:cell "Technical Writer"]]
               [:row
-               [:cell "tp05"]
-               [:cell "Krishna"]
-               [:cell "Technical Writer"]]
-              ]
-             ]
-            )]
+               [:cell {:font-style "italic"} "tp05"]
+               [:cell {:font-weight "bold"} "Krishna"]
+               [:cell "Technical Writer"]]]])]
     (.write wb out)
     (.close out)
     (prn "/tmp/foo.xslx written!")))

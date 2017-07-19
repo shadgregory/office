@@ -2,18 +2,35 @@
   (:import (org.apache.poi.xssf.usermodel
             XSSFWorkbook
             XSSFSheet
+            XSSFFont
             XSSFRow)))
 
-(defn process-cell [row sexp num]
+(defn process-cell [wb row sexp num]
   (let [cell (.createCell row num)]
-    (.setCellValue cell (second sexp))))
+    (cond
+      (= "italic" (:font-style (second sexp)))
+      (let [font (.createFont wb)
+            style (.createCellStyle wb)]
+        (.setItalic font true)
+        (.setFont style font)
+        (.setCellStyle cell style)
+        (.setCellValue cell (nth sexp 2)))
+      (= "bold" (:font-weight (second sexp)))
+      (let [font (.createFont wb)
+            style (.createCellStyle wb)]
+        (.setBold font true)
+        (.setFont style font)
+        (.setCellStyle cell style)
+        (.setCellValue cell (nth sexp 2)))
+      :else
+      (.setCellValue cell (second sexp)))))
 
-(defn process-row [spreadsheet num sexp]
+(defn process-row [wb spreadsheet num sexp]
   (let [row (.createRow spreadsheet num)]
     (loop [cells (rest sexp) num 0]
       (cond
         (empty? cells) spreadsheet
-        (= :cell (first (first cells))) (do (process-cell row (first cells) num)
+        (= :cell (first (first cells))) (do (process-cell wb row (first cells) num)
                                             (recur (rest cells) (inc num)))
         :else
         (throw (Exception. (str "Don't know what to do with " (first cells))))))))
@@ -27,7 +44,7 @@
       (cond
         (empty? rows) wb
         (= :row (first (first rows)))(do
-                                       (process-row spreadsheet rowid (first rows))
+                                       (process-row wb spreadsheet rowid (first rows))
                                        (recur (rest rows) (inc rowid)))
         :else
         (throw (Exception. (str "Don't know what to do with " (first (first rows)))))))))
