@@ -65,7 +65,13 @@
                                        (process-row wb spreadsheet rowid (first rows))
                                        (recur (rest rows) (inc rowid)))
         :else
-        (throw (Exception. (str "Don't know what to do with " (first (first rows)))))))))
+        (throw (Exception. (str "Don't know what to do with " (first (first rows)))))))
+    (loop [index (count (rest (rest sexp)))]
+      (cond
+        (= index 0) nil
+        :else (do
+                (.autoSizeColumn spreadsheet (short index))
+                (recur (dec index)))))))
 
 (defn excel [sexp]
   (let [wb (new XSSFWorkbook)]
