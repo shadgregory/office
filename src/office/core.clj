@@ -8,10 +8,10 @@
         wb (excel
             [:wb
              [:spreadsheet " Employee Info "
-              [:row
-               [:cell "EMP ID"]
-               [:cell "EMP NAME"]
-               [:cell "DESIGNATION"]]
+              [:row 
+               [:th "EMP ID"]
+               [:th "EMP NAME"]
+               [:th "DESIGNATION"]]
               [:row
                [:cell "tp01"]
                [:cell "Gopal"]

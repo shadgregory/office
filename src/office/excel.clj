@@ -1,9 +1,19 @@
 (ns office.excel
-  (:import (org.apache.poi.xssf.usermodel
+  (:import
+   (org.apache.poi.xssf.usermodel
             XSSFWorkbook
             XSSFSheet
             XSSFFont
             XSSFRow)))
+
+(defn process-header-cell [wb row sexp num]
+  (let [cell (.createCell row num)
+        font (.createFont wb)
+        style (.createCellStyle wb)]
+    (.setBold font true)
+    (.setFont style font)
+    (.setCellStyle cell style)
+    (.setCellValue cell (second sexp))))
 
 (defn process-cell [wb row sexp num]
   (let [cell (.createCell row num)]
@@ -27,13 +37,21 @@
 
 (defn process-row [wb spreadsheet num sexp]
   (let [row (.createRow spreadsheet num)]
-    (loop [cells (rest sexp) num 0]
-      (cond
-        (empty? cells) spreadsheet
-        (= :cell (first (first cells))) (do (process-cell wb row (first cells) num)
+    (cond
+      (not (nil? (:background-color (second sexp))))
+      (let [style (.getRowStyle row)]
+        (.setFillBackgroundColor style )
+        )
+      :else
+      (loop [cells (rest sexp) num 0]
+        (cond
+          (empty? cells) spreadsheet
+          (= :cell (first (first cells))) (do (process-cell wb row (first cells) num)
+                                              (recur (rest cells) (inc num)))
+          (= :th (first (first cells))) (do (process-header-cell wb row (first cells) num)
                                             (recur (rest cells) (inc num)))
-        :else
-        (throw (Exception. (str "Don't know what to do with " (first cells))))))))
+          :else
+          (throw (Exception. (str "Don't know what to do with " (first cells)))))))))
 
 (defn process-spreadsheet [wb sexp]
   (if (not (string? (second sexp)))
