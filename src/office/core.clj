@@ -8,7 +8,7 @@
         wb (excel
             [:wb
              [:spreadsheet " Employee Info "
-              [:row 
+              [:row {:background-color "grey_25_percent"}
                [:th "EMP ID"]
                [:th "EMP NAME"]
                [:th "DESIGNATION"]]

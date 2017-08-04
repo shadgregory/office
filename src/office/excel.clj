@@ -1,21 +1,30 @@
 (ns office.excel
   (:import
-   (org.apache.poi.xssf.usermodel
-            XSSFWorkbook
-            XSSFSheet
-            XSSFFont
-            XSSFRow)))
+   (org.apache.poi.ss.usermodel CellStyle
+                                FillPatternType
+                                IndexedColors)
+   (org.apache.poi.xssf.usermodel XSSFWorkbook
+                                  XSSFSheet
+                                  XSSFFont
+                                  XSSFRow)))
 
-(defn process-header-cell [wb row sexp num]
+(defn set-cell-bg [cell style bg]
+    (.setFillBackgroundColor style (.getIndex (IndexedColors/valueOf (.toUpperCase (name bg)))))
+    (.setFillPattern style CellStyle/BIG_SPOTS)
+    (.setCellStyle cell style))
+
+(defn process-header-cell [wb row sexp num & bg]
   (let [cell (.createCell row num)
         font (.createFont wb)
         style (.createCellStyle wb)]
     (.setBold font true)
     (.setFont style font)
     (.setCellStyle cell style)
-    (.setCellValue cell (second sexp))))
+    (.setCellValue cell (second sexp))
+    (if (not (nil? bg))
+      (set-cell-bg cell style (first bg)))))
 
-(defn process-cell [wb row sexp num]
+(defn process-cell [wb row sexp num & bg]
   (let [cell (.createCell row num)]
     (cond
       (= "italic" (:font-style (second sexp)))
@@ -24,24 +33,39 @@
         (.setItalic font true)
         (.setFont style font)
         (.setCellStyle cell style)
-        (.setCellValue cell (nth sexp 2)))
+        (.setCellValue cell (nth sexp 2))
+        (if (not (nil? bg))
+          (set-cell-bg cell style (first bg))))
       (= "bold" (:font-weight (second sexp)))
       (let [font (.createFont wb)
             style (.createCellStyle wb)]
         (.setBold font true)
         (.setFont style font)
         (.setCellStyle cell style)
-        (.setCellValue cell (nth sexp 2)))
+        (.setCellValue cell (nth sexp 2))
+        (if (not (nil? bg))
+          (set-cell-bg cell style (first bg))))
       :else
-      (.setCellValue cell (second sexp)))))
+      (do
+        (.setCellValue cell (second sexp))
+        (if (not (nil? bg))
+          (let [style (.createCellStyle wb)]
+            (set-cell-bg cell style (first bg))))))))
 
 (defn process-row [wb spreadsheet num sexp]
   (let [row (.createRow spreadsheet num)]
     (cond
       (not (nil? (:background-color (second sexp))))
-      (let [style (.getRowStyle row)]
-        (.setFillBackgroundColor style )
-        )
+      (let [style (.createCellStyle wb)]
+        (loop [cells (rest (rest sexp)) num 0]
+          (cond
+            (empty? cells) spreadsheet
+            (= :cell (first (first cells))) (do (process-cell wb row (first cells) num (:background-color (second sexp)))
+                                                (recur (rest cells) (inc num)))
+            (= :th (first (first cells))) (do (process-header-cell wb row (first cells) num (:background-color (second sexp)))
+                                              (recur (rest cells) (inc num)))
+            :else
+            (throw (Exception. (str "Don't know what to do with " (first cells)))))) )
       :else
       (loop [cells (rest sexp) num 0]
         (cond
