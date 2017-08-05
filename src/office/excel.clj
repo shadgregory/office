@@ -10,7 +10,7 @@
 
 (defn set-cell-bg [cell style bg]
     (.setFillBackgroundColor style (.getIndex (IndexedColors/valueOf (.toUpperCase (name bg)))))
-    (.setFillPattern style CellStyle/BIG_SPOTS)
+    (.setFillPattern style CellStyle/LEAST_DOTS)
     (.setCellStyle cell style))
 
 (defn process-header-cell [wb row sexp num & bg]
@@ -47,7 +47,7 @@
           (set-cell-bg cell style (first bg))))
       :else
       (do
-        (.setCellValue cell (second sexp))
+        (.setCellValue cell (str (second sexp)))
         (if (not (nil? bg))
           (let [style (.createCellStyle wb)]
             (set-cell-bg cell style (first bg))))))))
@@ -60,7 +60,7 @@
         (loop [cells (rest (rest sexp)) num 0]
           (cond
             (empty? cells) spreadsheet
-            (= :cell (first (first cells))) (do (process-cell wb row (first cells) num (:background-color (second sexp)))
+            (= :td (first (first cells))) (do (process-cell wb row (first cells) num (:background-color (second sexp)))
                                                 (recur (rest cells) (inc num)))
             (= :th (first (first cells))) (do (process-header-cell wb row (first cells) num (:background-color (second sexp)))
                                               (recur (rest cells) (inc num)))
@@ -70,7 +70,7 @@
       (loop [cells (rest sexp) num 0]
         (cond
           (empty? cells) spreadsheet
-          (= :cell (first (first cells))) (do (process-cell wb row (first cells) num)
+          (= :td (first (first cells))) (do (process-cell wb row (first cells) num)
                                               (recur (rest cells) (inc num)))
           (= :th (first (first cells))) (do (process-header-cell wb row (first cells) num)
                                             (recur (rest cells) (inc num)))
@@ -85,7 +85,7 @@
            rowid 0]
       (cond
         (empty? rows) wb
-        (= :row (first (first rows)))(do
+        (= :tr (first (first rows)))(do
                                        (process-row wb spreadsheet rowid (first rows))
                                        (recur (rest rows) (inc rowid)))
         :else
