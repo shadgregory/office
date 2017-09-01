@@ -58,10 +58,10 @@
   (if (not (nil? (:background-color config))) (loop [cells cells num 0]
                                                 (cond
                                                   (empty? cells) spreadsheet
-                                                  (= :td (first (first cells))) (do (process-cell wb row (first cells) num (:background-color config))
-                                                                                    (recur (rest cells) (inc num)))
-                                                  (= :th (first (first cells))) (do (process-header-cell wb row (first cells) num (:background-color config))
-                                                                                    (recur (rest cells) (inc num)))
+                                                  (= :td (ffirst cells)) (do (process-cell wb row (first cells) num (:background-color config))
+                                                                             (recur (rest cells) (inc num)))
+                                                  (= :th (ffirst cells)) (do (process-header-cell wb row (first cells) num (:background-color config))
+                                                                             (recur (rest cells) (inc num)))
                                                   :else
                                                   (throw (Exception. (str "Don't know what to do with " (first cells)))))))
   (if (not (nil? (:colspan config))) (let [cell (.createCell row 0)
@@ -73,7 +73,7 @@
                                        (.setFont style font)
                                        (.setAlignment style CellStyle/ALIGN_CENTER)
                                        (.setCellStyle cell style)
-                                       (.addMergedRegion spreadsheet (new CellRangeAddress row-num row-num 0 (- (Integer. (:colspan config)) 1))))))
+                                       (.addMergedRegion spreadsheet (new CellRangeAddress row-num row-num 0 (dec (Integer. (:colspan config))))))))
 
 (defn process-row [wb spreadsheet num sexp]
   (let [row (.createRow spreadsheet num)]
@@ -84,20 +84,20 @@
         (loop [cells (rest (rest sexp)) num 0]
           (cond
             (empty? cells) spreadsheet
-            (= :td (first (first cells))) (do (process-cell wb row (first cells) num (:background-color (second sexp)))
-                                              (recur (rest cells) (inc num)))
-            (= :th (first (first cells))) (do (process-header-cell wb row (first cells) num (:background-color (second sexp)))
-                                              (recur (rest cells) (inc num)))
+            (= :td (ffirst cells)) (do (process-cell wb row (first cells) num (:background-color (second sexp)))
+                                       (recur (rest cells) (inc num)))
+            (= :th (ffirst cells)) (do (process-header-cell wb row (first cells) num (:background-color (second sexp)))
+                                       (recur (rest cells) (inc num)))
             :else
             (throw (Exception. (str "Don't know what to do with " (first cells)))))) )
       :else
       (loop [cells (rest sexp) num 0]
         (cond
           (empty? cells) spreadsheet
-          (= :td (first (first cells))) (do (process-cell wb row (first cells) num)
-                                            (recur (rest cells) (inc num)))
-          (= :th (first (first cells))) (do (process-header-cell wb row (first cells) num)
-                                            (recur (rest cells) (inc num)))
+          (= :td (ffirst cells)) (do (process-cell wb row (first cells) num)
+                                     (recur (rest cells) (inc num)))
+          (= :th (ffirst cells)) (do (process-header-cell wb row (first cells) num)
+                                     (recur (rest cells) (inc num)))
           :else
           (throw (Exception. (str "Don't know what to do with " (first cells)))))))))
 
@@ -109,14 +109,14 @@
            rowid 0]
       (cond
         (empty? rows) wb
-        (= :tr (first (first rows)))(do
-                                       (process-row wb spreadsheet rowid (first rows))
-                                       (recur (rest rows) (inc rowid)))
+        (= :tr (ffirst rows))(do
+                               (process-row wb spreadsheet rowid (first rows))
+                               (recur (rest rows) (inc rowid)))
         :else
-        (throw (Exception. (str "Don't know what to do with " (first (first rows)))))))
+        (throw (Exception. (str "Don't know what to do with " (ffirst rows))))))
     (loop [index (count (rest (rest sexp)))]
       (cond
-        (= index 0) nil
+        (zero? index) nil
         :else (do
                 (.autoSizeColumn spreadsheet (short index))
                 (recur (dec index)))))))
@@ -127,7 +127,7 @@
       (cond
         (empty? sexp) wb
         (= :wb (first sexp)) (recur (rest sexp))
-        (= :spreadsheet (first (first sexp))) (do (process-spreadsheet wb (first sexp))
-                                                  (recur (rest sexp)))
+        (= :spreadsheet (ffirst sexp)) (do (process-spreadsheet wb (first sexp))
+                                           (recur (rest sexp)))
         :else
         (throw (Exception. (str "Syntax Error. Don't know what to do with " (first sexp))))))))

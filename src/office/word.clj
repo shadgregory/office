@@ -19,11 +19,14 @@
 
 (defn font-config [config run]
   (if (not (nil? config))
-    (do
+    (when-not (nil? config)
       (if (contains? config :color) (.setColor run (get config :color)))
-      (if (contains? config :text-position) (.setTextPosition run (get config :text-position)))
-      (if (contains? config :font-family) (.setFontFamily run (get config :font-family)))
-      (if (contains? config :font-size) (.setFontSize run (get config :font-size))))))
+      (if (contains? config :text-position)
+        (.setTextPosition run (get config :text-position)))
+      (if (contains? config :font-family)
+        (.setFontFamily run (get config :font-family)))
+      (if (contains? config :font-size)
+        (.setFontSize run (get config :font-size))))))
 
 (defn paragraph [doc exp]
   (let [par (.createParagraph doc)
@@ -80,7 +83,7 @@
                                                         (font-config (first current) run)
                                                         (recur (cons (subvec current 1) (rest body)) run))
                                (string? (first current)) (do
-                                                           (.setText run (first (first body)))
+                                                           (.setText run (ffirst body))
                                                            (recur (rest body) run)))
           (map? (first body)) (let [config (first body)
                                     run (.createRun par)]
@@ -103,13 +106,13 @@
         (nil? exps) nil
         (empty? exps) nil
         (vector? (first exps)) (cond
-                                 (= :p (first (first exps))) (do
-                                                               (paragraph doc (first exps))
-                                                               (recur (rest exps)))
-                                 (= :br (first (first exps)))(let [par (.createParagraph doc)
-                                                                   run (.createRun par)]
-                                                               (.addBreak run)
-                                                               (recur (rest exps))))
+                                 (= :p (ffirst exps)) (do
+                                                        (paragraph doc (first exps))
+                                                        (recur (rest exps)))
+                                 (= :br (ffirst exps))(let [par (.createParagraph doc)
+                                                            run (.createRun par)]
+                                                        (.addBreak run)
+                                                        (recur (rest exps))))
         :else
         (throw (Throwable. (str "Syntax Error! " (first exps))))))
     doc))
