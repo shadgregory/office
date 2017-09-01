@@ -1,11 +1,13 @@
 (ns office.excel
   (:import
+   (org.apache.poi.ss.util CellRangeAddress)
    (org.apache.poi.ss.usermodel CellStyle
                                 FillPatternType
                                 IndexedColors)
    (org.apache.poi.xssf.usermodel XSSFWorkbook
                                   XSSFSheet
                                   XSSFFont
+                                  TextAlign
                                   XSSFRow)))
 
 (defn set-cell-bg [cell style bg]
@@ -52,16 +54,38 @@
           (let [style (.createCellStyle wb)]
             (set-cell-bg cell style (first bg))))))))
 
+(defn process-row-config [wb spreadsheet config cells row row-num]
+  (if (not (nil? (:background-color config))) (loop [cells cells num 0]
+                                                (cond
+                                                  (empty? cells) spreadsheet
+                                                  (= :td (first (first cells))) (do (process-cell wb row (first cells) num (:background-color config))
+                                                                                    (recur (rest cells) (inc num)))
+                                                  (= :th (first (first cells))) (do (process-header-cell wb row (first cells) num (:background-color config))
+                                                                                    (recur (rest cells) (inc num)))
+                                                  :else
+                                                  (throw (Exception. (str "Don't know what to do with " (first cells)))))))
+  (if (not (nil? (:colspan config))) (let [cell (.createCell row 0)
+                                           font (.createFont wb)
+                                           style (.createCellStyle wb)]
+                                       ;; defaulting to bold & centered for now 
+                                       (.setCellValue cell (first cells))
+                                       (.setBold font true)
+                                       (.setFont style font)
+                                       (.setAlignment style CellStyle/ALIGN_CENTER)
+                                       (.setCellStyle cell style)
+                                       (.addMergedRegion spreadsheet (new CellRangeAddress row-num row-num 0 (- (Integer. (:colspan config)) 1))))))
+
 (defn process-row [wb spreadsheet num sexp]
   (let [row (.createRow spreadsheet num)]
     (cond
+      (map? (second sexp)) (process-row-config wb spreadsheet (second sexp) (rest (rest sexp)) row num)
       (not (nil? (:background-color (second sexp))))
       (let [style (.createCellStyle wb)]
         (loop [cells (rest (rest sexp)) num 0]
           (cond
             (empty? cells) spreadsheet
             (= :td (first (first cells))) (do (process-cell wb row (first cells) num (:background-color (second sexp)))
-                                                (recur (rest cells) (inc num)))
+                                              (recur (rest cells) (inc num)))
             (= :th (first (first cells))) (do (process-header-cell wb row (first cells) num (:background-color (second sexp)))
                                               (recur (rest cells) (inc num)))
             :else
@@ -71,7 +95,7 @@
         (cond
           (empty? cells) spreadsheet
           (= :td (first (first cells))) (do (process-cell wb row (first cells) num)
-                                              (recur (rest cells) (inc num)))
+                                            (recur (rest cells) (inc num)))
           (= :th (first (first cells))) (do (process-header-cell wb row (first cells) num)
                                             (recur (rest cells) (inc num)))
           :else
