@@ -1,5 +1,6 @@
 (ns office.excel
   (:import
+   (java.awt Color)
    (org.apache.poi.ss.util CellRangeAddress)
    (org.apache.poi.ss.usermodel CellStyle
                                 FillPatternType
@@ -7,13 +8,18 @@
    (org.apache.poi.xssf.usermodel XSSFWorkbook
                                   XSSFSheet
                                   XSSFFont
+                                  XSSFColor
                                   TextAlign
                                   XSSFRow)))
 
 (defn set-cell-bg [cell style bg]
+  (try
     (.setFillBackgroundColor style (.getIndex (IndexedColors/valueOf (.toUpperCase (name bg)))))
-    (.setFillPattern style CellStyle/LEAST_DOTS)
-    (.setCellStyle cell style))
+    (catch IllegalArgumentException e
+      ;;not an indexed color, let's assume it's hex
+      (.setFillBackgroundColor style (new XSSFColor (Color/decode bg)))))
+  (.setFillPattern style CellStyle/LEAST_DOTS)
+  (.setCellStyle cell style))
 
 (defn process-header-cell [wb row sexp num & bg]
   (let [cell (.createCell row num)
