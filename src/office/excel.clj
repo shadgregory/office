@@ -1,5 +1,7 @@
 (ns office.excel
+  (:require [ring.util.response :as r])
   (:import
+   (java.io ByteArrayInputStream ByteArrayOutputStream)
    (org.apache.poi.ss.util CellRangeAddress)
    (org.apache.poi.ss.usermodel CellStyle
                                 FillPatternType
@@ -10,10 +12,25 @@
                                   TextAlign
                                   XSSFRow)))
 
+(defn td? [element]
+  (if (nil? (re-find #"^td" (name element)))
+    false
+    true))
+
+(defn th? [element]
+  (if (nil? (re-find #"^th" (name element)))
+    false
+    true))
+
+(defn tr? [element]
+  (if (nil? (re-find #"^tr" (name element)))
+    false
+    true))
+
 (defn set-cell-bg [cell style bg]
-    (.setFillBackgroundColor style (.getIndex (IndexedColors/valueOf (.toUpperCase (name bg)))))
-    (.setFillPattern style CellStyle/LEAST_DOTS)
-    (.setCellStyle cell style))
+  (.setFillBackgroundColor style (.getIndex (IndexedColors/valueOf (.toUpperCase (name bg)))))
+  (.setFillPattern style CellStyle/LEAST_DOTS)
+  (.setCellStyle cell style))
 
 (defn process-header-cell [wb row sexp num & bg]
   (let [cell (.createCell row num)
@@ -58,16 +75,16 @@
   (if (not (nil? (:background-color config))) (loop [cells cells num 0]
                                                 (cond
                                                   (empty? cells) spreadsheet
-                                                  (= :td (ffirst cells)) (do (process-cell wb row (first cells) num (:background-color config))
-                                                                             (recur (rest cells) (inc num)))
-                                                  (= :th (ffirst cells)) (do (process-header-cell wb row (first cells) num (:background-color config))
-                                                                             (recur (rest cells) (inc num)))
+                                                  (td? (ffirst cells)) (do (process-cell wb row (first cells) num (:background-color config))
+                                                                           (recur (rest cells) (inc num)))
+                                                  (th? (ffirst cells)) (do (process-header-cell wb row (first cells) num (:background-color config))
+                                                                           (recur (rest cells) (inc num)))
                                                   :else
                                                   (throw (Exception. (str "Don't know what to do with " (first cells)))))))
   (if (not (nil? (:colspan config))) (let [cell (.createCell row 0)
                                            font (.createFont wb)
                                            style (.createCellStyle wb)]
-                                       ;; defaulting to bold & centered for now 
+                                       ;; defaulting to bold & centered for now
                                        (.setCellValue cell (first cells))
                                        (.setBold font true)
                                        (.setFont style font)
@@ -84,20 +101,20 @@
         (loop [cells (rest (rest sexp)) num 0]
           (cond
             (empty? cells) spreadsheet
-            (= :td (ffirst cells)) (do (process-cell wb row (first cells) num (:background-color (second sexp)))
-                                       (recur (rest cells) (inc num)))
-            (= :th (ffirst cells)) (do (process-header-cell wb row (first cells) num (:background-color (second sexp)))
-                                       (recur (rest cells) (inc num)))
+            (td? (ffirst cells)) (do (process-cell wb row (first cells) num (:background-color (second sexp)))
+                                     (recur (rest cells) (inc num)))
+            (th? (ffirst cells)) (do (process-header-cell wb row (first cells) num (:background-color (second sexp)))
+                                     (recur (rest cells) (inc num)))
             :else
             (throw (Exception. (str "Don't know what to do with " (first cells)))))) )
       :else
       (loop [cells (rest sexp) num 0]
         (cond
           (empty? cells) spreadsheet
-          (= :td (ffirst cells)) (do (process-cell wb row (first cells) num)
-                                     (recur (rest cells) (inc num)))
-          (= :th (ffirst cells)) (do (process-header-cell wb row (first cells) num)
-                                     (recur (rest cells) (inc num)))
+          (td? (ffirst cells)) (do (process-cell wb row (first cells) num)
+                                   (recur (rest cells) (inc num)))
+          (th? (ffirst cells)) (do (process-header-cell wb row (first cells) num)
+                                   (recur (rest cells) (inc num)))
           :else
           (throw (Exception. (str "Don't know what to do with " (first cells)))))))))
 
@@ -109,9 +126,9 @@
            rowid 0]
       (cond
         (empty? rows) wb
-        (= :tr (ffirst rows))(do
-                               (process-row wb spreadsheet rowid (first rows))
-                               (recur (rest rows) (inc rowid)))
+        (tr? (ffirst rows))(do
+                             (process-row wb spreadsheet rowid (first rows))
+                             (recur (rest rows) (inc rowid)))
         :else
         (throw (Exception. (str "Don't know what to do with " (ffirst rows))))))
     (loop [index (count (rest (rest sexp)))]
@@ -131,3 +148,12 @@
                                            (recur (rest sexp)))
         :else
         (throw (Exception. (str "Syntax Error. Don't know what to do with " (first sexp))))))))
+
+(defn excel-page [title excel-sexp]
+  (let [stream (ByteArrayOutputStream.)]
+    (.write (excel excel-sexp)
+            stream)
+    (-> (r/response (ByteArrayInputStream. (.toByteArray stream)))
+        (r/header "Content-Type" "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;")
+        (r/header "Content-Length" (.size stream))
+        (r/header "Content-Disposition" (str "attachment; filename=" (clojure.string/replace title #"[ ]+" "_") ".xlsx")))))
