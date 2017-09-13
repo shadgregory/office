@@ -94,7 +94,7 @@
           (let [style (.createCellStyle wb)]
             (set-cell-bg cell style (first bg))))))))
 
-(defn process-row-config [wb spreadsheet config cells row row-num]
+(defn process-row-config [wb spreadsheet config cells row]
   (if (not (nil? (:background-color config))) (loop [cells cells num 0]
                                                 (cond
                                                   (empty? cells) spreadsheet
@@ -108,7 +108,7 @@
 (defn process-row [wb spreadsheet num sexp]
   (let [row (.createRow spreadsheet num)]
     (cond
-      (map? (second sexp)) (process-row-config wb spreadsheet (second sexp) (rest (rest sexp)) row num)
+      (map? (second sexp)) (process-row-config wb spreadsheet (second sexp) (rest (rest sexp)) row)
       (not (nil? (:background-color (second sexp))))
       (let [style (.createCellStyle wb)]
         (loop [cells (rest (rest sexp)) num 0]
