@@ -56,7 +56,8 @@
               [:tr
                [:td {:font-style "italic"} "tp05"]
                [:td {:font-weight "bold"} "Krishna"]
-               [:td "Technical Writer"]]]])]
+               [:td "Technical Writer"]]
+              [:tr [:td {:colspan "3"} "This cell is three columns wide!"]]]])]
     (.write wb out)
     (.close out)
     (prn "/tmp/foo.xslx written!")))

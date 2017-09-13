@@ -49,7 +49,23 @@
     (if (not (nil? bg))
       (set-cell-bg cell style (first bg)))))
 
-(defn process-cell [wb row sexp num & bg]
+(defn process-cell-config [wb spreadsheet config cells row]
+  (if (not (nil? (:colspan config))) (let [cell (.createCell row 0)
+                                           font (.createFont wb)
+                                           style (.createCellStyle wb)]
+                                       ;; defaulting to bold & centered for now
+                                       (.setCellValue cell (first cells))
+                                       (.setBold font true)
+                                       (.setFont style font)
+                                       (.setAlignment style CellStyle/ALIGN_CENTER)
+                                       (.setCellStyle cell style)
+                                       (.addMergedRegion spreadsheet (new CellRangeAddress
+                                                                          (.getRowNum row)
+                                                                          (.getRowNum row)
+                                                                          0
+                                                                          (dec (Integer. (:colspan config))))))))
+
+(defn process-cell [wb spreadsheet row sexp num & bg]
   (let [cell (.createCell row num)]
     (cond
       (= "italic" (:font-style (second sexp)))
@@ -70,6 +86,7 @@
         (.setCellValue cell (nth sexp 2))
         (if (not (nil? bg))
           (set-cell-bg cell style (first bg))))
+      (map? (second sexp)) (process-cell-config wb spreadsheet (second sexp) (rest (rest sexp)) row)
       :else
       (do
         (.setCellValue cell (str (second sexp)))
@@ -81,22 +98,12 @@
   (if (not (nil? (:background-color config))) (loop [cells cells num 0]
                                                 (cond
                                                   (empty? cells) spreadsheet
-                                                  (td? (ffirst cells)) (do (process-cell wb row (first cells) num (:background-color config))
+                                                  (td? (ffirst cells)) (do (process-cell wb spreadsheet row (first cells) num (:background-color config))
                                                                            (recur (rest cells) (inc num)))
                                                   (th? (ffirst cells)) (do (process-header-cell wb row (first cells) num (:background-color config))
                                                                            (recur (rest cells) (inc num)))
                                                   :else
-                                                  (throw (Exception. (str "Don't know what to do with " (first cells)))))))
-  (if (not (nil? (:colspan config))) (let [cell (.createCell row 0)
-                                           font (.createFont wb)
-                                           style (.createCellStyle wb)]
-                                       ;; defaulting to bold & centered for now
-                                       (.setCellValue cell (first cells))
-                                       (.setBold font true)
-                                       (.setFont style font)
-                                       (.setAlignment style CellStyle/ALIGN_CENTER)
-                                       (.setCellStyle cell style)
-                                       (.addMergedRegion spreadsheet (new CellRangeAddress row-num row-num 0 (dec (Integer. (:colspan config))))))))
+                                                  (throw (Exception. (str "Don't know what to do with " (first cells))))))))
 
 (defn process-row [wb spreadsheet num sexp]
   (let [row (.createRow spreadsheet num)]
@@ -107,7 +114,7 @@
         (loop [cells (rest (rest sexp)) num 0]
           (cond
             (empty? cells) spreadsheet
-            (td? (ffirst cells)) (do (process-cell wb row (first cells) num (:background-color (second sexp)))
+            (td? (ffirst cells)) (do (process-cell wb spreadsheet row (first cells) num (:background-color (second sexp)))
                                      (recur (rest cells) (inc num)))
             (th? (ffirst cells)) (do (process-header-cell wb row (first cells) num (:background-color (second sexp)))
                                      (recur (rest cells) (inc num)))
@@ -117,7 +124,7 @@
       (loop [cells (rest sexp) num 0]
         (cond
           (empty? cells) spreadsheet
-          (td? (ffirst cells)) (do (process-cell wb row (first cells) num)
+          (td? (ffirst cells)) (do (process-cell wb spreadsheet row (first cells) num)
                                    (recur (rest cells) (inc num)))
           (th? (ffirst cells)) (do (process-header-cell wb row (first cells) num)
                                    (recur (rest cells) (inc num)))
