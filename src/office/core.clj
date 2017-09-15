@@ -57,6 +57,10 @@
                [:td {:font-style "italic"} "tp05"]
                [:td {:font-weight "bold"} "Krishna"]
                [:td "Technical Writer"]]
+              [:tr
+               [:td [:a {:href "https://duckduckgo.com/"} "DuckDuckGo"]]
+               [:td [:a {:href "https://www.google.com/"} "Google"]]
+               [:td [:a {:href "https://www.bing.com/"} "Bing"]]]
               [:tr [:td {:colspan "3"} "This cell is three columns wide!"]]]])]
     (.write wb out)
     (.close out)

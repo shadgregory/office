@@ -4,16 +4,20 @@
    (java.awt Color)
    (java.io ByteArrayInputStream ByteArrayOutputStream)
    (org.apache.poi.ss.util CellRangeAddress)
+   (org.apache.poi.common.usermodel Hyperlink)
    (org.apache.poi.ss.usermodel CellStyle
+                                CreationHelper
                                 FillPatternType
                                 IndexedColors)
    (org.apache.poi.xssf.usermodel XSSFWorkbook
                                   XSSFSheet
                                   XSSFFont
                                   XSSFColor
+                                  XSSFHyperlink
                                   TextAlign
                                   XSSFRow)))
 
+;; We want to ignore hiccup style classes and ids that might follow the tag
 (defn td? [element]
   (if (nil? (re-find #"^td" (name element)))
     false
@@ -28,6 +32,12 @@
   (if (nil? (re-find #"^tr" (name element)))
     false
     true))
+
+(defn table? [element]
+  (if (nil? (re-find #"^table" (name element)))
+    false
+    true))
+;;;;;;
 
 (defn set-cell-bg [cell style bg]
   (try
@@ -49,50 +59,59 @@
     (if (not (nil? bg))
       (set-cell-bg cell style (first bg)))))
 
-(defn process-cell-config [wb spreadsheet config cells row]
-  (if (not (nil? (:colspan config))) (let [cell (.createCell row 0)
-                                           font (.createFont wb)
-                                           style (.createCellStyle wb)]
-                                       ;; defaulting to bold & centered for now
-                                       (.setCellValue cell (first cells))
-                                       (.setBold font true)
-                                       (.setFont style font)
-                                       (.setAlignment style CellStyle/ALIGN_CENTER)
-                                       (.setCellStyle cell style)
-                                       (.addMergedRegion spreadsheet (new CellRangeAddress
-                                                                          (.getRowNum row)
-                                                                          (.getRowNum row)
-                                                                          0
-                                                                          (dec (Integer. (:colspan config))))))))
+(defn process-cell-config [wb spreadsheet config cell row]
+  (let [font (.createFont wb)
+        style (.createCellStyle wb)]
+    (cond
+      (contains? config :colspan) (do
+                                    ;; defaulting to bold & centered for now
+                                    (.setBold font true)
+                                    (.setFont style font)
+                                    (.setAlignment style CellStyle/ALIGN_CENTER)
+                                    (.setCellStyle cell style)
+                                    (.addMergedRegion spreadsheet (new CellRangeAddress
+                                                                       (.getRowNum row)
+                                                                       (.getRowNum row)
+                                                                       0
+                                                                       (dec (Integer. (:colspan config))))))
+      (contains? config :font-style) (do
+                                       (cond
+                                         (= "italic" (:font-style config)) (do
+                                                                             (.setItalic font true)
+                                                                             (.setFont style font)
+                                                                             (.setCellStyle cell style))))
+      (contains? config :font-weight) (do
+                                        (cond
+                                          (= "bold" (:font-weight config)) (do
+                                                                             (.setBold font true)
+                                                                             (.setFont style font)
+                                                                             (.setCellStyle cell style)))))))
 
 (defn process-cell [wb spreadsheet row sexp num & bg]
   (let [cell (.createCell row num)]
-    (cond
-      (= "italic" (:font-style (second sexp)))
-      (let [font (.createFont wb)
-            style (.createCellStyle wb)]
-        (.setItalic font true)
-        (.setFont style font)
-        (.setCellStyle cell style)
-        (.setCellValue cell (nth sexp 2))
-        (if (not (nil? bg))
-          (set-cell-bg cell style (first bg))))
-      (= "bold" (:font-weight (second sexp)))
-      (let [font (.createFont wb)
-            style (.createCellStyle wb)]
-        (.setBold font true)
-        (.setFont style font)
-        (.setCellStyle cell style)
-        (.setCellValue cell (nth sexp 2))
-        (if (not (nil? bg))
-          (set-cell-bg cell style (first bg))))
-      (map? (second sexp)) (process-cell-config wb spreadsheet (second sexp) (rest (rest sexp)) row)
-      :else
-      (do
-        (.setCellValue cell (str (second sexp)))
-        (if (not (nil? bg))
-          (let [style (.createCellStyle wb)]
-            (set-cell-bg cell style (first bg))))))))
+    (loop [sexp sexp]
+      (cond
+        (empty? sexp) spreadsheet
+        (= :td (first sexp)) (recur (rest sexp))
+        (map? (first sexp)) (do
+                              (process-cell-config wb spreadsheet (first sexp) cell row)
+                              (recur (rest sexp)))
+        (vector? (first sexp)) (do
+                                 (cond
+                                   (= :a (ffirst sexp)) (let [url (:href (second (first sexp)))
+                                                              text (nth (first sexp) 2)
+                                                              create-helper (.getCreationHelper wb)
+                                                              link (.createHyperlink create-helper Hyperlink/LINK_URL)]
+                                                          (.setCellValue cell text)
+                                                          (.setAddress link url)
+                                                          (.setHyperlink cell link)))
+                                 (recur (rest sexp)))
+        (string? (first sexp)) (do
+                                 (.setCellValue cell (first sexp))
+                                 (if (not (nil? bg))
+                                   (let [style (.createCellStyle wb)]
+                                     (set-cell-bg cell style (first bg))))
+                                 (recur (rest sexp)))))))
 
 (defn process-row-config [wb spreadsheet config cells row]
   (if (not (nil? (:background-color config))) (loop [cells cells num 0]
@@ -157,8 +176,10 @@
       (cond
         (empty? sexp) wb
         (= :wb (first sexp)) (recur (rest sexp))
-        (= :spreadsheet (ffirst sexp)) (do (process-spreadsheet wb (first sexp))
-                                           (recur (rest sexp)))
+        (or
+         (table? (ffirst sexp))
+         (= :spreadsheet (ffirst sexp)))(do (process-spreadsheet wb (first sexp))
+                                            (recur (rest sexp)))
         :else
         (throw (Exception. (str "Syntax Error. Don't know what to do with " (first sexp))))))))
 
