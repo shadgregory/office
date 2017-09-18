@@ -125,6 +125,8 @@
                                                   (throw (Exception. (str "Don't know what to do with " (first cells))))))))
 
 (defn process-row [wb spreadsheet num sexp]
+  (prn (str "*** " num " ***"))
+  (prn "process-row  " sexp)
   (let [row (.createRow spreadsheet num)]
     (cond
       (map? (second sexp)) (process-row-config wb spreadsheet (second sexp) (rest (rest sexp)) row)
@@ -151,16 +153,30 @@
           (throw (Exception. (str "Don't know what to do with " (first cells)))))))))
 
 (defn process-spreadsheet [wb sexp]
-  (if (not (string? (second sexp)))
+  (if (not (map? (second sexp)))
     (throw (Exception. "Worksheet title is required.")))
-  (let [spreadsheet (.createSheet wb (second sexp))]
+  (let [spreadsheet (.createSheet wb (:title (second sexp)))]
     (loop [rows (rest (rest sexp))
            rowid 0]
       (cond
         (empty? rows) wb
-        (tr? (ffirst rows))(do
-                             (process-row wb spreadsheet rowid (first rows))
-                             (recur (rest rows) (inc rowid)))
+        (tr? (ffirst rows)) (do
+                              (process-row wb spreadsheet rowid (first rows))
+                              (recur (rest rows) (inc rowid)))
+        (= :thead (ffirst rows)) (do
+                                   (process-row wb spreadsheet rowid (first (rest (first rows))))
+                                   (recur (rest rows) (inc rowid)))
+        (= :tbody (ffirst rows)) (do
+                                   (recur (rest rows)
+                                          (loop [body-rows (rest (first rows)) i rowid]
+                                            (cond
+                                              (empty? body-rows) i
+                                              :else (do
+                                                      (process-row wb spreadsheet i (first body-rows))
+                                                      (recur (rest body-rows) (inc i)))))))
+        (= :tfoot (ffirst rows)) (do
+                                   (process-row wb spreadsheet rowid (first (rest (first rows))))
+                                   (recur (rest rows) (inc rowid)))
         :else
         (throw (Exception. (str "Don't know what to do with " (ffirst rows))))))
     (loop [index (count (rest (rest sexp)))]
