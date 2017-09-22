@@ -39,6 +39,26 @@
     true))
 ;;;;;;
 
+;; get thead's tr
+(defn get-thead-row [sexp]
+  (loop [sexp sexp]
+    (cond
+      (empty? sexp) nil
+      (= :wb (first sexp)) (recur (first (rest sexp)))
+      (table? (first sexp)) (recur (first (rest sexp)))
+      (= :thead (first sexp)) (first (rest sexp)))))
+
+;;how many cells in the thead?
+(defn column-count [sexp]
+  (let [thead (get-thead-row sexp)]
+    (loop [thead (rest thead) c 0]
+      (cond
+        (empty? thead) c
+        (th? (ffirst thead)) (recur (rest thead) (inc c))
+        (td? (ffirst thead)) (recur (rest thead) (inc c))
+        :else
+        (recur (rest thead) c)))))
+
 (defn set-cell-bg [cell style bg]
   (try
     (.setFillBackgroundColor style (.getIndex (IndexedColors/valueOf (.toUpperCase (name bg)))))
@@ -177,7 +197,7 @@
                                    (recur (rest rows) (inc rowid)))
         :else
         (throw (Exception. (str "Don't know what to do with " (ffirst rows))))))
-    (loop [index (count (rest (rest sexp)))]
+    (loop [index (column-count sexp)]
       (cond
         (zero? index) nil
         :else (do
