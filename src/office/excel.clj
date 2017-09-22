@@ -29,14 +29,17 @@
     true))
 
 (defn tr? [element]
-  (if (nil? (re-find #"^tr" (name element)))
-    false
-    true))
+  (cond
+    (not (keyword? element)) false
+    (nil? (re-find #"^tr" (name element))) false
+    :else true))
 
 (defn table? [element]
-  (if (nil? (re-find #"^table" (name element)))
-    false
-    true))
+  (cond
+    (not (keyword? element)) false
+    (= :spreadsheet element) true
+    (nil? (re-find #"^table" (name element))) false
+    :else true))
 ;;;;;;
 
 ;; get thead's tr
@@ -44,9 +47,12 @@
   (loop [sexp sexp]
     (cond
       (empty? sexp) nil
+      (map? (first sexp)) (recur (rest sexp))
       (= :wb (first sexp)) (recur (first (rest sexp)))
-      (table? (first sexp)) (recur (first (rest sexp)))
-      (= :thead (first sexp)) (first (rest sexp)))))
+      (table? (first sexp)) (recur (rest sexp))
+      (= :thead (first sexp)) sexp
+      (= :thead (ffirst sexp)) (first sexp)
+      (tr? (ffirst sexp)) (recur (first (rest sexp))))))
 
 ;;how many cells in the thead?
 (defn column-count [sexp]
@@ -54,6 +60,8 @@
     (loop [thead (rest thead) c 0]
       (cond
         (empty? thead) c
+        (tr? (ffirst thead)) (recur (rest (first thead)) c)
+        (map? (first thead)) (recur (rest thead) c)
         (th? (ffirst thead)) (recur (rest thead) (inc c))
         (td? (ffirst thead)) (recur (rest thead) (inc c))
         :else
@@ -197,12 +205,13 @@
                                    (recur (rest rows) (inc rowid)))
         :else
         (throw (Exception. (str "Don't know what to do with " (ffirst rows))))))
-    (loop [index (column-count sexp)]
+    (loop [i 1]
       (cond
-        (zero? index) nil
-        :else (do
-                (.autoSizeColumn spreadsheet (short index))
-                (recur (dec index)))))))
+        (= i (inc (column-count sexp))) nil
+        :else
+        (do
+          (.autoSizeColumn spreadsheet i)
+          (recur (inc i)))))))
 
 (defn excel [sexp]
   (let [wb (new XSSFWorkbook)]
