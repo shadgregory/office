@@ -125,8 +125,6 @@
                                                   (throw (Exception. (str "Don't know what to do with " (first cells))))))))
 
 (defn process-row [wb spreadsheet num sexp]
-  (prn (str "*** " num " ***"))
-  (prn "process-row  " sexp)
   (let [row (.createRow spreadsheet num)]
     (cond
       (map? (second sexp)) (process-row-config wb spreadsheet (second sexp) (rest (rest sexp)) row)
