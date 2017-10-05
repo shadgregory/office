@@ -4,10 +4,11 @@
    (java.awt Color)
    (java.io ByteArrayInputStream ByteArrayOutputStream)
    (org.apache.poi.ss.util CellRangeAddress)
-   (org.apache.poi.common.usermodel Hyperlink)
+   (org.apache.poi.common.usermodel HyperlinkType)
    (org.apache.poi.ss.usermodel CellStyle
                                 CreationHelper
                                 FillPatternType
+                                HorizontalAlignment
                                 IndexedColors)
    (org.apache.poi.xssf.usermodel XSSFWorkbook
                                   XSSFSheet
@@ -73,7 +74,7 @@
     (catch IllegalArgumentException e
       ;;not an indexed color, let's assume it's hex
       (.setFillBackgroundColor style (new XSSFColor (Color/decode bg)))))
-  (.setFillPattern style CellStyle/LEAST_DOTS)
+  (.setFillPattern style FillPatternType/LEAST_DOTS)
   (.setCellStyle cell style))
 
 (defn process-header-cell [wb row sexp num & bg]
@@ -95,7 +96,7 @@
                                     ;; defaulting to bold & centered for now
                                     (.setBold font true)
                                     (.setFont style font)
-                                    (.setAlignment style CellStyle/ALIGN_CENTER)
+                                    (.setAlignment style HorizontalAlignment/CENTER)
                                     (.setCellStyle cell style)
                                     (.addMergedRegion spreadsheet (new CellRangeAddress
                                                                        (.getRowNum row)
@@ -129,7 +130,7 @@
                                    (= :a (ffirst sexp)) (let [url (:href (second (first sexp)))
                                                               text (nth (first sexp) 2)
                                                               create-helper (.getCreationHelper wb)
-                                                              link (.createHyperlink create-helper Hyperlink/LINK_URL)]
+                                                              link (.createHyperlink create-helper HyperlinkType/URL)]
                                                           (.setCellValue cell text)
                                                           (.setAddress link url)
                                                           (.setHyperlink cell link)))
