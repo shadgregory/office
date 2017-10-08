@@ -73,8 +73,8 @@
     (.setFillBackgroundColor style (.getIndex (IndexedColors/valueOf (.toUpperCase (name bg)))))
     (catch IllegalArgumentException e
       ;;not an indexed color, let's assume it's hex
-      (.setFillBackgroundColor style (new XSSFColor (Color/decode bg)))))
-  (.setFillPattern style FillPatternType/LEAST_DOTS)
+      (.setFillForegroundColor style (new XSSFColor (Color/decode bg)))))
+  (.setFillPattern style FillPatternType/SOLID_FOREGROUND)
   (.setCellStyle cell style))
 
 (defn process-header-cell [wb row sexp num & bg]
