@@ -6,7 +6,8 @@ Office for Clojure provides a hiccup-like syntax for ms office docs.
  [:wb
   [:table {:title "Test"}
    [:thead
-    [:tr [:th "A"] [:th "B"]]]
+    [:tr {:background-color "#8DBDD8"}
+     [:th "A"] [:th "B"]]]
    [:tbody [:tr [:td "foo"] [:td "bar"]]]
    [:tfoot [:tr [:td "foobar"] [:td "barfoo"]]]]])
 ```
