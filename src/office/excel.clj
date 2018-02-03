@@ -23,6 +23,8 @@
 (defn td? [element]
   (cond
     (= "sum" (name element)) true
+    (= "median" (name element)) true
+    (= "max" (name element)) true
     (not (nil? (re-find #"^td" (name element)))) true
     :else false))
 
@@ -111,6 +113,7 @@
                                                                              (.setItalic font true)
                                                                              (.setFont style font)
                                                                              (.setCellStyle cell style))))
+      (contains? config :background-color) (set-cell-bg cell style (:background-color config))
       (contains? config :font-weight) (do
                                         (cond
                                           (= "bold" (:font-weight config)) (do
@@ -123,6 +126,16 @@
     (.setCellType cell HSSFCell/CELL_TYPE_FORMULA)
     (.setCellFormula cell (str "SUM(" formula ")"))))
 
+(defn process-median [cell sexp]
+  (let [formula (second sexp)]
+    (.setCellType cell HSSFCell/CELL_TYPE_FORMULA)
+    (.setCellFormula cell (str "MEDIAN(" formula ")"))))
+
+(defn process-max [cell sexp]
+  (let [formula (second sexp)]
+    (.setCellType cell HSSFCell/CELL_TYPE_FORMULA)
+    (.setCellFormula cell (str "MAX(" formula ")"))))
+
 (defn process-cell [wb spreadsheet row sexp num & bg]
   (let [cell (.createCell row num)]
     (loop [sexp sexp]
@@ -131,6 +144,12 @@
         (= :td (first sexp)) (recur (rest sexp))
         (= :sum (first sexp)) (do
                                 (process-sum cell sexp)
+                                (recur (rest sexp)))
+        (= :median (first sexp)) (do
+                                   (process-median cell sexp)
+                                   (recur (rest sexp)))
+        (= :max (first sexp)) (do
+                                (process-max cell sexp)
                                 (recur (rest sexp)))
         (map? (first sexp)) (do
                               (process-cell-config wb spreadsheet (first sexp) cell row)

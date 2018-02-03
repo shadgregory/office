@@ -29,6 +29,21 @@
     (.write doc out)
     (.close out)
     (println "/tmp/test.docx written successfully"))
+  (let [out (new FileOutputStream (new File "./formulas.xslx"))
+        wb (excel [:wb
+                   [:table {:title "Formulas"}
+                    [:tbody
+                     [:tr [:td {:background-color "#efefef"} "Numbers"] [:td "1"]]
+                     [:tr [:td] [:td "2"]]
+                     [:tr [:td] [:td "3"]]
+                     [:tr [:td] [:td "4"]]
+                     [:tr [:td] [:td "5"]]
+                     [:tr [:td {:background-color "#efefef"} "SUM"] [:sum "B1:B5"]]
+                     [:tr [:td {:background-color "#efefef"} "MEDIAN"] [:median "B1:B5"]]
+                     [:tr [:td {:background-color "#efefef"} "MAX"] [:max "B1:B5"]]]]])]
+    (.write wb out)
+    (.close out)
+    )
   (let [out (new FileOutputStream (new File "/tmp/prez.xslx"))
         wb (excel
             [:wb
