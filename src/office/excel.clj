@@ -10,6 +10,7 @@
                                 FillPatternType
                                 HorizontalAlignment
                                 IndexedColors)
+   (org.apache.poi.hssf.usermodel HSSFCell)
    (org.apache.poi.xssf.usermodel XSSFWorkbook
                                   XSSFSheet
                                   XSSFFont
@@ -20,9 +21,10 @@
 
 ;; We want to ignore hiccup style classes and ids that might follow the tag
 (defn td? [element]
-  (if (nil? (re-find #"^td" (name element)))
-    false
-    true))
+  (cond
+    (= "sum" (name element)) true
+    (not (nil? (re-find #"^td" (name element)))) true
+    :else false))
 
 (defn th? [element]
   (if (nil? (re-find #"^th" (name element)))
@@ -116,12 +118,20 @@
                                                                              (.setFont style font)
                                                                              (.setCellStyle cell style)))))))
 
+(defn process-sum [cell sexp]
+  (let [formula (second sexp)]
+    (.setCellType cell HSSFCell/CELL_TYPE_FORMULA)
+    (.setCellFormula cell (str "SUM(" formula ")"))))
+
 (defn process-cell [wb spreadsheet row sexp num & bg]
   (let [cell (.createCell row num)]
     (loop [sexp sexp]
       (cond
         (empty? sexp) spreadsheet
         (= :td (first sexp)) (recur (rest sexp))
+        (= :sum (first sexp)) (do
+                                (process-sum cell sexp)
+                                (recur (rest sexp)))
         (map? (first sexp)) (do
                               (process-cell-config wb spreadsheet (first sexp) cell row)
                               (recur (rest sexp)))
@@ -136,7 +146,9 @@
                                                           (.setHyperlink cell link)))
                                  (recur (rest sexp)))
         (string? (first sexp)) (do
-                                 (.setCellValue cell (first sexp))
+                                 (if (nil? (re-find #"^[-+]?([0-9]*\.[0-9]+|[0-9]+)" (first sexp)))
+                                   (.setCellValue cell (first sexp))
+                                   (.setCellValue cell (Double. (first sexp))))
                                  (if (not (nil? bg))
                                    (let [style (.createCellStyle wb)]
                                      (set-cell-bg cell style (first bg))))

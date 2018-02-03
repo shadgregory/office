@@ -43,6 +43,5 @@
                                  [:td [:a {:href "https://www.google.com/"} "Google"]]
                                  [:td [:a {:href "https://www.bing.com/"} "Bing"]]]]
                                [:tfoot
-                                [:tr [:td {:colspan "3"} "Footer Goes Here"]]]]])))
-  )
+                                [:tr [:td {:colspan "3"} "Footer Goes Here"]]]]]))))
 
