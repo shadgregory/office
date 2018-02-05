@@ -39,3 +39,21 @@ Office for Clojure provides a hiccup-like DSL for MS Office documents.
   (.close out))
 ```
 ![Screenshot](screenshot_excel.png)
+
+Need to serve a spreadsheet like a web page? It's no problem with excel-page:
+```clojure
+(defn my-excel [request]
+  (excel-page
+   "My Excel Document"
+   [:wb
+    [:table {:title "My Excel"}
+     [:thead
+      [:th "Letters"]]
+     [:tbody
+      [:tr
+       [:td "A"]]
+      [:tr
+       [:td "B"]]
+      [:tr
+       [:td "C"]]]]]))
+```
