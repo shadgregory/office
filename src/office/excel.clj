@@ -2,7 +2,10 @@
   (:require [ring.util.response :as r])
   (:import
    (java.awt Color)
-   (java.io ByteArrayInputStream ByteArrayOutputStream)
+   (java.io ByteArrayInputStream
+            File
+            FileInputStream
+            ByteArrayOutputStream)
    (org.apache.poi.ss.util CellRangeAddress)
    (org.apache.poi.common.usermodel HyperlinkType)
    (org.apache.poi.ss.usermodel CellStyle
@@ -19,12 +22,30 @@
                                   TextAlign
                                   XSSFRow)))
 
+(defn max-column-count [file]
+  (let [fis (new FileInputStream (new File file))
+        workbook (new XSSFWorkbook fis)
+        spreadsheet (.getSheetAt workbook 0)
+        row-iterator (.iterator spreadsheet)
+        most-cols (atom (short 0))]
+    (while (true? (.hasNext row-iterator))
+      (let [row (.next row-iterator)]
+        (if (> (.getLastCellNum row) @most-cols)
+          (reset! most-cols (.getLastCellNum row)))))
+    @most-cols))
+
 ;; We want to ignore hiccup style classes and ids that might follow the tag
 (defn td? [element]
   (cond
     (= "sum" (name element)) true
+    (= "count" (name element)) true
+    (= "avg" (name element)) true
     (= "median" (name element)) true
+    (= "fact" (name element)) true
+    (= "power" (name element)) true
+    (= "product" (name element)) true
     (= "max" (name element)) true
+    (= "sqrt" (name element)) true
     (not (nil? (re-find #"^td" (name element)))) true
     :else false))
 
@@ -126,15 +147,45 @@
     (.setCellType cell HSSFCell/CELL_TYPE_FORMULA)
     (.setCellFormula cell (str "SUM(" formula ")"))))
 
+(defn process-average [cell sexp]
+  (let [formula (second sexp)]
+    (.setCellType cell HSSFCell/CELL_TYPE_FORMULA)
+    (.setCellFormula cell (str "AVERAGE(" formula ")"))))
+
+(defn process-count [cell sexp]
+  (let [formula (second sexp)]
+    (.setCellType cell HSSFCell/CELL_TYPE_FORMULA)
+    (.setCellFormula cell (str "COUNT(" formula ")"))))
+
 (defn process-median [cell sexp]
   (let [formula (second sexp)]
     (.setCellType cell HSSFCell/CELL_TYPE_FORMULA)
     (.setCellFormula cell (str "MEDIAN(" formula ")"))))
 
+(defn process-power [cell sexp]
+  (let [formula (second sexp)]
+    (.setCellType cell HSSFCell/CELL_TYPE_FORMULA)
+    (.setCellFormula cell (str "POWER(" formula ")"))))
+
+(defn process-product [cell sexp]
+  (let [formula (second sexp)]
+    (.setCellType cell HSSFCell/CELL_TYPE_FORMULA)
+    (.setCellFormula cell (str "PRODUCT(" formula ")"))))
+
 (defn process-max [cell sexp]
   (let [formula (second sexp)]
     (.setCellType cell HSSFCell/CELL_TYPE_FORMULA)
     (.setCellFormula cell (str "MAX(" formula ")"))))
+
+(defn process-sqrt [cell sexp]
+  (let [formula (second sexp)]
+    (.setCellType cell HSSFCell/CELL_TYPE_FORMULA)
+    (.setCellFormula cell (str "SQRT(" formula ")"))))
+
+(defn process-fact [cell sexp]
+  (let [formula (second sexp)]
+    (.setCellType cell HSSFCell/CELL_TYPE_FORMULA)
+    (.setCellFormula cell (str "FACT(" formula ")"))))
 
 (defn process-cell [wb spreadsheet row sexp num & bg]
   (let [cell (.createCell row num)]
@@ -148,9 +199,27 @@
         (= :median (first sexp)) (do
                                    (process-median cell sexp)
                                    (recur (rest sexp)))
+        (= :power (first sexp)) (do
+                                  (process-power cell sexp)
+                                  (recur (rest sexp)))
+        (= :product (first sexp)) (do
+                                    (process-product cell sexp)
+                                    (recur (rest sexp)))
+        (= :count (first sexp)) (do
+                                  (process-count cell sexp)
+                                  (recur (rest sexp)))
+        (= :avg (first sexp)) (do
+                                (process-average cell sexp)
+                                (recur (rest sexp)))
         (= :max (first sexp)) (do
                                 (process-max cell sexp)
                                 (recur (rest sexp)))
+        (= :sqrt (first sexp)) (do
+                                 (process-sqrt cell sexp)
+                                 (recur (rest sexp)))
+        (= :fact (first sexp)) (do
+                                 (process-fact cell sexp)
+                                 (recur (rest sexp)))
         (map? (first sexp)) (do
                               (process-cell-config wb spreadsheet (first sexp) cell row)
                               (recur (rest sexp)))
