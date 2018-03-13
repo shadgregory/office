@@ -113,7 +113,7 @@
     (if (not (nil? bg))
       (set-cell-bg cell style (first bg)))))
 
-(defn process-cell-config [wb spreadsheet config cell row]
+(defn process-cell-config [wb spreadsheet config cell row num]
   (let [font (.createFont wb)
         style (.createCellStyle wb)]
     (cond
@@ -126,8 +126,8 @@
                                     (.addMergedRegion spreadsheet (new CellRangeAddress
                                                                        (.getRowNum row)
                                                                        (.getRowNum row)
-                                                                       0
-                                                                       (dec (Integer. (:colspan config))))))
+                                                                       num
+                                                                       (Integer. (:colspan config)))))
       (contains? config :font-style) (do
                                        (cond
                                          (= "italic" (:font-style config)) (do
@@ -221,7 +221,7 @@
                                  (process-fact cell sexp)
                                  (recur (rest sexp)))
         (map? (first sexp)) (do
-                              (process-cell-config wb spreadsheet (first sexp) cell row)
+                              (process-cell-config wb spreadsheet (first sexp) cell row num)
                               (recur (rest sexp)))
         (vector? (first sexp)) (do
                                  (cond
