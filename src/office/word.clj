@@ -40,7 +40,7 @@
                                (= :i (first current)) (do
                                                         (.setItalic run true)
                                                         (if (vector? (second current))
-                                                          (recur (cons (first (subvec current)) (rest body)) run)
+                                                          (recur (cons (first (subvec current 1)) (rest body)) run)
                                                           (recur (cons (subvec current 1) (rest body)) run)))
                                (= :u (first current)) (do
                                                         (.setUnderline run UnderlinePatterns/SINGLE)

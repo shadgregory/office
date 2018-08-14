@@ -4,7 +4,7 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.9.0"]
-                 [ring/ring-core "1.6.2"]
+                 [ring/ring-core "1.6.3"]
                  [org.apache.poi/poi "3.17"]
                  [org.apache.poi/poi-ooxml "3.17"]]
   :main ^:skip-aot office.core

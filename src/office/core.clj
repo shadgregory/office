@@ -42,8 +42,8 @@
                      [:tr [:td {:background-color "#efefef"} "MEDIAN"] [:median "B1:B5"]]
                      [:tr [:td {:background-color "#efefef"} "MAX"] [:max "B1:B5"]]]]])]
     (.write wb out)
-    (.close out)
-    )
+    (.close out))
+  
   (let [out (new FileOutputStream (new File "/tmp/prez.xslx"))
         wb (excel
             [:wb

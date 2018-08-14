@@ -9,6 +9,7 @@
    (org.apache.poi.ss.util CellRangeAddress)
    (org.apache.poi.common.usermodel HyperlinkType)
    (org.apache.poi.ss.usermodel CellStyle
+                                CellType
                                 CreationHelper
                                 FillPatternType
                                 HorizontalAlignment
@@ -128,63 +129,60 @@
                                                                        (.getRowNum row)
                                                                        num
                                                                        (Integer. (:colspan config)))))
-      (contains? config :font-style) (do
-                                       (cond
-                                         (= "italic" (:font-style config)) (do
-                                                                             (.setItalic font true)
-                                                                             (.setFont style font)
-                                                                             (.setCellStyle cell style))))
+      (contains? config :font-style) (cond
+                                       (= "italic" (:font-style config)) (do
+                                                                           (.setItalic font true)
+                                                                           (.setFont style font)
+                                                                           (.setCellStyle cell style)))
       (contains? config :background-color) (set-cell-bg cell style (:background-color config))
-      (contains? config :font-weight) (do
-                                        (cond
-                                          (= "bold" (:font-weight config)) (do
-                                                                             (.setBold font true)
-                                                                             (.setFont style font)
-                                                                             (.setCellStyle cell style)))))))
-
+      (contains? config :font-weight) (cond
+                                        (= "bold" (:font-weight config)) (do
+                                                                           (.setBold font true)
+                                                                           (.setFont style font)
+                                                                           (.setCellStyle cell style))))))
 (defn process-sum [cell sexp]
   (let [formula (second sexp)]
-    (.setCellType cell HSSFCell/CELL_TYPE_FORMULA)
+    (.setCellType cell CellType/FORMULA)
     (.setCellFormula cell (str "SUM(" formula ")"))))
 
 (defn process-average [cell sexp]
   (let [formula (second sexp)]
-    (.setCellType cell HSSFCell/CELL_TYPE_FORMULA)
+    (.setCellType cell CellType/FORMULA)
     (.setCellFormula cell (str "AVERAGE(" formula ")"))))
 
 (defn process-count [cell sexp]
   (let [formula (second sexp)]
-    (.setCellType cell HSSFCell/CELL_TYPE_FORMULA)
+    (.setCellType cell CellType/FORMULA)
     (.setCellFormula cell (str "COUNT(" formula ")"))))
 
 (defn process-median [cell sexp]
   (let [formula (second sexp)]
-    (.setCellType cell HSSFCell/CELL_TYPE_FORMULA)
+    (.setCellType cell CellType/FORMULA)
     (.setCellFormula cell (str "MEDIAN(" formula ")"))))
 
 (defn process-power [cell sexp]
   (let [formula (second sexp)]
-    (.setCellType cell HSSFCell/CELL_TYPE_FORMULA)
+    (.setCellType cell CellType/FORMULA)
     (.setCellFormula cell (str "POWER(" formula ")"))))
 
 (defn process-product [cell sexp]
   (let [formula (second sexp)]
-    (.setCellType cell HSSFCell/CELL_TYPE_FORMULA)
+    (.setCellType cell CellType/FORMULA)
     (.setCellFormula cell (str "PRODUCT(" formula ")"))))
 
 (defn process-max [cell sexp]
   (let [formula (second sexp)]
-    (.setCellType cell HSSFCell/CELL_TYPE_FORMULA)
+    (.setCellType cell CellType/FORMULA)
     (.setCellFormula cell (str "MAX(" formula ")"))))
 
 (defn process-sqrt [cell sexp]
   (let [formula (second sexp)]
-    (.setCellType cell HSSFCell/CELL_TYPE_FORMULA)
+    (.setCellType cell CellType/FORMULA)
     (.setCellFormula cell (str "SQRT(" formula ")"))))
 
 (defn process-fact [cell sexp]
   (let [formula (second sexp)]
-    (.setCellType cell HSSFCell/CELL_TYPE_FORMULA)
+    (.setCellType cell CellType/FORMULA)
     (.setCellFormula cell (str "FACT(" formula ")"))))
 
 (defn process-cell [wb spreadsheet row sexp num & bg]
@@ -293,14 +291,13 @@
         (= :thead (ffirst rows)) (do
                                    (process-row wb spreadsheet rowid (first (rest (first rows))))
                                    (recur (rest rows) (inc rowid)))
-        (= :tbody (ffirst rows)) (do
-                                   (recur (rest rows)
-                                          (loop [body-rows (rest (first rows)) i rowid]
-                                            (cond
-                                              (empty? body-rows) i
-                                              :else (do
-                                                      (process-row wb spreadsheet i (first body-rows))
-                                                      (recur (rest body-rows) (inc i)))))))
+        (= :tbody (ffirst rows)) (recur (rest rows)
+                                        (loop [body-rows (rest (first rows)) i rowid]
+                                          (cond
+                                            (empty? body-rows) i
+                                            :else (do
+                                                    (process-row wb spreadsheet i (first body-rows))
+                                                    (recur (rest body-rows) (inc i))))))
         (= :tfoot (ffirst rows)) (do
                                    (process-row wb spreadsheet rowid (first (rest (first rows))))
                                    (recur (rest rows) (inc rowid)))
