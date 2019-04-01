@@ -3,10 +3,10 @@
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.9.0"]
-                 [ring/ring-core "1.6.3"]
-                 [org.apache.poi/poi "3.17"]
-                 [org.apache.poi/poi-ooxml "3.17"]]
+  :dependencies [[org.clojure/clojure "1.10.0"]
+                 [ring/ring-core "1.7.1"]
+                 [org.apache.poi/poi "4.0.1"]
+                 [org.apache.poi/poi-ooxml "4.0.1"]]
   :main ^:skip-aot office.core
   :local-repo "local-m2"
   :target-path "target/%s"
