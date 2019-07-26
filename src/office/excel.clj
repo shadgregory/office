@@ -142,47 +142,38 @@
                                                                            (.setCellStyle cell style))))))
 (defn process-sum [cell sexp]
   (let [formula (second sexp)]
-    (.setCellType cell CellType/FORMULA)
     (.setCellFormula cell (str "SUM(" formula ")"))))
 
 (defn process-average [cell sexp]
   (let [formula (second sexp)]
-    (.setCellType cell CellType/FORMULA)
     (.setCellFormula cell (str "AVERAGE(" formula ")"))))
 
 (defn process-count [cell sexp]
   (let [formula (second sexp)]
-    (.setCellType cell CellType/FORMULA)
     (.setCellFormula cell (str "COUNT(" formula ")"))))
 
 (defn process-median [cell sexp]
   (let [formula (second sexp)]
-    (.setCellType cell CellType/FORMULA)
     (.setCellFormula cell (str "MEDIAN(" formula ")"))))
 
 (defn process-power [cell sexp]
   (let [formula (second sexp)]
-    (.setCellType cell CellType/FORMULA)
     (.setCellFormula cell (str "POWER(" formula ")"))))
 
 (defn process-product [cell sexp]
   (let [formula (second sexp)]
-    (.setCellType cell CellType/FORMULA)
     (.setCellFormula cell (str "PRODUCT(" formula ")"))))
 
 (defn process-max [cell sexp]
   (let [formula (second sexp)]
-    (.setCellType cell CellType/FORMULA)
     (.setCellFormula cell (str "MAX(" formula ")"))))
 
 (defn process-sqrt [cell sexp]
   (let [formula (second sexp)]
-    (.setCellType cell CellType/FORMULA)
     (.setCellFormula cell (str "SQRT(" formula ")"))))
 
 (defn process-fact [cell sexp]
   (let [formula (second sexp)]
-    (.setCellType cell CellType/FORMULA)
     (.setCellFormula cell (str "FACT(" formula ")"))))
 
 (defn process-cell [wb spreadsheet row sexp num & bg]
