@@ -54,7 +54,7 @@
                [:tr [:td "Good Luck"]]]]])]
     (.write wb out)
     (.close out)
-    (println "/tmp/test.docx written successfully"))
+    (println "./for_test.xslx written successfully"))
   (let [out (new FileOutputStream (new File "/tmp/prez.xslx"))
         wb (excel
             [:wb

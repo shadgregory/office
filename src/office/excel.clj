@@ -256,16 +256,16 @@
            (= "" (.getString (.getRichStringCellValue cell)))) true
       :else false)))
 
-(defn process-row [wb spreadsheet num sexp]
+(defn process-row [wb spreadsheet sexp]
   (let [last-row-num (.getLastRowNum spreadsheet)
         last-row (.getRow spreadsheet last-row-num)
         row (cond
-              (nil? last-row)(.createRow spreadsheet num)
+              (nil? last-row)(.createRow spreadsheet 0)
               (is-row-empty? last-row) last-row
               :else (.createRow spreadsheet (inc last-row-num)))]
     (cond
       (seq? sexp) (doseq [[count row] (map-indexed vector sexp)]
-                    (process-row wb spreadsheet (+ num count) row))
+                    (process-row wb spreadsheet row))
       (map? (second sexp)) (process-row-config wb spreadsheet (second sexp) (rest (rest sexp)) row)
       (not (nil? (:background-color (second sexp))))
       (let [style (.createCellStyle wb)]
@@ -298,20 +298,20 @@
       (cond
         (empty? rows) wb
         (tr? (ffirst rows)) (do
-                              (process-row wb spreadsheet rowid (first rows))
+                              (process-row wb spreadsheet (first rows))
                               (recur (rest rows) (inc rowid)))
         (= :thead (ffirst rows)) (do
-                                   (process-row wb spreadsheet rowid (first (rest (first rows))))
+                                   (process-row wb spreadsheet (first (rest (first rows))))
                                    (recur (rest rows) (inc rowid)))
         (= :tbody (ffirst rows)) (recur (rest rows)
                                         (loop [body-rows (rest (first rows)) i rowid]
                                           (cond
                                             (empty? body-rows) i
                                             :else (do
-                                                    (process-row wb spreadsheet i (first body-rows))
+                                                    (process-row wb spreadsheet (first body-rows))
                                                     (recur (rest body-rows) (inc i))))))
         (= :tfoot (ffirst rows)) (do
-                                   (process-row wb spreadsheet rowid (first (rest (first rows))))
+                                   (process-row wb spreadsheet (first (rest (first rows))))
                                    (recur (rest rows) (inc rowid)))
         :else
         (throw (Exception. (str "Don't know what to do with " (ffirst rows))))))
