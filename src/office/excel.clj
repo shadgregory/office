@@ -231,6 +231,12 @@
                                                           (.setAddress link url)
                                                           (.setHyperlink cell link)))
                                  (recur (rest sexp)))
+        (number? (first sexp)) (do
+                                 (.setCellValue cell (Double. (str (first sexp))))
+                                 (if (not (nil? bg))
+                                   (let [style (.createCellStyle wb)]
+                                     (set-cell-bg cell style (first bg))))
+                                 (recur (rest sexp)))
         (string? (first sexp)) (do
                                  (if (nil? (re-find #"^[-+]?([0-9]*\.[0-9]+|[0-9]+)" (first sexp)))
                                    (.setCellValue cell (first sexp))
@@ -251,9 +257,24 @@
                                                   :else
                                                   (throw (Exception. (str "Don't know what to do with " (first cells))))))))
 
-(defn process-row [wb spreadsheet num sexp]
-  (let [row (.createRow spreadsheet num)]
+(defn is-row-empty? [row]
+  (let [cell (.getCell row (Integer. (re-find #"\d+" (str (.getFirstCellNum row)))))]
     (cond
+      (nil? cell) true
+      (and (= CellType/STRING (.getCellType cell))
+           (= "" (.getString (.getRichStringCellValue cell)))) true
+      :else false)))
+
+(defn process-row [wb spreadsheet num sexp]
+  (let [last-row-num (.getLastRowNum spreadsheet)
+        last-row (.getRow spreadsheet last-row-num)
+        row (cond
+              (nil? last-row)(.createRow spreadsheet num)
+              (is-row-empty? last-row) last-row
+              :else (.createRow spreadsheet (inc last-row-num)))]
+    (cond
+      (seq? sexp) (doseq [[count row] (map-indexed vector sexp)]
+                    (process-row wb spreadsheet (+ num count) row))
       (map? (second sexp)) (process-row-config wb spreadsheet (second sexp) (rest (rest sexp)) row)
       (not (nil? (:background-color (second sexp))))
       (let [style (.createCellStyle wb)]

@@ -43,7 +43,18 @@
                      [:tr [:td {:background-color "#efefef"} "MAX"] [:max "B1:B5"]]]]])]
     (.write wb out)
     (.close out))
-  
+  (let [out (new FileOutputStream (new File "./for_test.xslx"))
+        wb (excel
+            [:wb
+             [:table {:title "For Test"}
+              [:thead [:tr [:td "Numbers"]]]
+              [:tbody
+               (for [x (range 1 6)]
+                 [:tr [:td x]])
+               [:tr [:td "Good Luck"]]]]])]
+    (.write wb out)
+    (.close out)
+    (println "/tmp/test.docx written successfully"))
   (let [out (new FileOutputStream (new File "/tmp/prez.xslx"))
         wb (excel
             [:wb
@@ -54,7 +65,7 @@
                 [:td "Born"]
                 [:td "Died"]
                 [:td "Wiki"]]]
-              [:tbody 
+              [:tbody
                [:tr [:td "Abraham Lincoln"]
                 [:td "1809"]
                 [:td "1865"]
