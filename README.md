@@ -12,7 +12,7 @@ Office for Clojure provides a hiccup-like DSL for MS Office documents.
               [:td "Born"]
               [:td "Died"]
               [:td "Wiki"]]]
-            [:tbody 
+            [:tbody
              [:tr [:td "Abraham Lincoln"]
               [:td "1809"]
               [:td "1865"]
@@ -57,3 +57,16 @@ Need to serve a spreadsheet like a web page? It's no problem with excel-page:
       [:tr
        [:td "C"]]]]]))
 ```
+
+A form like `for` will be conveniently expanded:
+
+```clojure
+(excel [:wb
+        [:table {:title "For Test"}
+         [:thead [:tr [:td "Numbers"]]]
+          [:tbody
+           (for [x (range 1 6)]
+            [:tr [:td x]])]]])
+```
+
+![Screenshot](for_example.png)

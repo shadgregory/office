@@ -79,7 +79,8 @@
       (table? (first sexp)) (recur (rest sexp))
       (= :thead (first sexp)) sexp
       (= :thead (ffirst sexp)) (first sexp)
-      (tr? (ffirst sexp)) (recur (first (rest sexp))))))
+      (tr? (ffirst sexp)) (recur (first (rest sexp)))
+      (= :caption (ffirst sexp)) (recur (first (rest sexp))))))
 
 ;;how many cells in the thead?
 (defn column-count [sexp]
@@ -229,7 +230,7 @@
                                      (set-cell-bg cell style (first bg))))
                                  (recur (rest sexp)))
         (string? (first sexp)) (do
-                                 (if (nil? (re-find #"^[-+]?([0-9]*\.[0-9]+|[0-9]+)" (first sexp)))
+                                 (if (nil? (re-find #"^[-+]?([0-9]*\.[0-9]+|[0-9]+)$" (first sexp)))
                                    (.setCellValue cell (first sexp))
                                    (.setCellValue cell (Double. (first sexp))))
                                  (if (not (nil? bg))
@@ -289,6 +290,23 @@
           :else
           (throw (Exception. (str "Don't know what to do with " (first cells)))))))))
 
+(defn process-caption [wb spreadsheet rows sexp]
+  (let [row (.createRow spreadsheet 0)
+        cell (.createCell row 0)
+        font (.createFont wb)
+        style (.createCellStyle wb)
+        text (first (rest (first rows)))]
+    (.setBold font true)
+    (.setFont style font)
+    (.setAlignment style HorizontalAlignment/CENTER)
+    (.setCellStyle cell style)
+    ;;HACK, saves us from parsing markup in the caption
+    (if (string? text)
+      (.setCellValue cell text)
+      (.setCellValue cell (:caption text)))
+    (.addMergedRegion spreadsheet (new CellRangeAddress 0 0 0
+                                       (dec (column-count sexp))))))
+
 (defn process-spreadsheet [wb sexp]
   (if (not (map? (second sexp)))
     (throw (Exception. "Worksheet title is required.")))
@@ -297,6 +315,9 @@
            rowid 0]
       (cond
         (empty? rows) wb
+        (= :caption (ffirst rows)) (do
+                                     (process-caption wb spreadsheet rows sexp)
+                                     (recur (rest rows) (inc rowid)))
         (tr? (ffirst rows)) (do
                               (process-row wb spreadsheet (first rows))
                               (recur (rest rows) (inc rowid)))

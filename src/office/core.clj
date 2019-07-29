@@ -90,7 +90,7 @@
                [:tr [:td {:colspan "4"} "Reconstruction Presidents."]]]]])]
     (.write wb out)
     (.close out))
-  (let [out (new FileOutputStream (new File "/tmp/foo.xslx"))
+  (let [out (new FileOutputStream (new File "./foo.xslx"))
         wb (excel
             [:wb
              [:spreadsheet {:title " Employee Info "}
@@ -136,4 +136,4 @@
                [:tr [:td {:colspan "4"} "Footer Goes Here"]]]]])]
     (.write wb out)
     (.close out)
-    (prn "/tmp/foo.xslx written!")))
+    (prn "./foo.xslx written!")))
