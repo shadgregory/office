@@ -225,24 +225,28 @@
                                                           (.setAddress link url)
                                                           (.setHyperlink cell link)))
                                  (recur (rest sexp)))
+        (nil? (first sexp)) (do (.setCellValue cell " ")
+                                (recur (rest sexp)))
         (number? (first sexp)) (do
                                  (.setCellValue cell (Double. (str (first sexp))))
                                  (if (not (nil? bg))
                                    (let [style (.createCellStyle wb)]
                                      (set-cell-bg cell style (first bg))))
                                  (recur (rest sexp)))
-        (not (nil? (re-find #"\d{2}\/\d{2}\/[12]\d{3}" (first sexp)))) (let [[m d y] (str/split (first sexp) #"\/" )
-                                                                             cell-style (.createCellStyle wb)
-                                                                             create-helper (.getCreationHelper wb)
-                                                                             ]
-                                                                         (.setDataFormat cell-style (.getFormat (.createDataFormat create-helper)
-                                                                                                                "MM/dd/yyyy"))
-                                                                         (.setCellStyle cell cell-style)
-                                                                         (.setCellValue cell (Date.
-                                                                                              (Integer/parseInt y)
-                                                                                              (Integer/parseInt m)
-                                                                                              (Integer/parseInt d)))
-                                                                         (recur (rest sexp)))
+        (not (nil? (re-find #"\d{1,2}\/\d{1,2}\/[12]\d{3}"
+                            (first sexp)))) (let [[m d y] (str/split (first sexp) #"\/" )
+                                                  cell-style (.createCellStyle wb)
+                                                  create-helper (.getCreationHelper wb)]
+                                              (.setDataFormat cell-style
+                                                              (.getFormat
+                                                               (.createDataFormat create-helper)
+                                                               "MM/dd/yyyy"))
+                                              (.setCellStyle cell cell-style)
+                                              (.setCellValue cell (Date.
+                                                                   (- (Integer/parseInt y) 1900)
+                                                                   (Integer/parseInt m)
+                                                                   (Integer/parseInt d)))
+                                              (recur (rest sexp)))
         (string? (first sexp)) (do
                                  (if (nil? (re-find #"^[-+]?([0-9]*\.[0-9]+|[0-9]+)$" (first sexp)))
                                    (.setCellValue cell (first sexp))
