@@ -131,7 +131,7 @@
                                                                        (.getRowNum row)
                                                                        (.getRowNum row)
                                                                        num
-                                                                       (Integer. (:colspan config)))))
+                                                                       (- (Integer. (:colspan config)) 1))))
       (contains? config :font-style) (cond
                                        (= "italic" (:font-style config)) (do
                                                                            (.setItalic font true)
