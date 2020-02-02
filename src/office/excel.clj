@@ -354,13 +354,8 @@
                                    (recur (rest rows) (inc rowid)))
         :else
         (throw (Exception. (str "Don't know what to do with " (ffirst rows))))))
-    (loop [i 1]
-      (cond
-        (= i (inc (column-count sexp))) nil
-        :else
-        (do
-          (.autoSizeColumn spreadsheet i)
-          (recur (inc i)))))))
+    (doseq [num (range (dec (column-count sexp)))]
+      (.autoSizeColumn spreadsheet num))))
 
 (defn excel [sexp]
   (let [wb (new XSSFWorkbook)]
